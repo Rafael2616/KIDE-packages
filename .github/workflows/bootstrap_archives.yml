@@ -38,7 +38,10 @@ jobs:
         run: ./scripts/setup-android-sdk.sh
 
       - name: Run build script for ${{ matrix.arch }}
-        run: ./build-package.sh -a ${{ matrix.arch }} ${{ github.event.inputs.package || 'cowsay' }}
+        run: |
+          sudo mkdir -p /data
+          sudo chown runner /data
+          ./build-package.sh -a ${{ matrix.arch }} ${{ github.event.inputs.package || 'cowsay' }}
 
 
       - name: Upload artifact for ${{ matrix.arch }}
