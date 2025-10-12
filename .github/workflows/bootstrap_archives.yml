@@ -33,6 +33,8 @@ jobs:
           sudo apt-get install -y build-essential git jq zip unzip
 
       - name: Set up Android SDK and NDK
+        env:
+          TERMUX_JAVA_HOME: ${{ env.JAVA_HOME }}
         run: ./scripts/setup-android-sdk.sh
 
       - name: Run build script for ${{ matrix.arch }}
