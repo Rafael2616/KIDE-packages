@@ -23,10 +23,10 @@ TERMUX_ARCHITECTURES=("aarch64" "arm" "i686" "x86_64")
 TERMUX_PACKAGE_MANAGERS=("apt" "pacman")
 
 # The repository base urls mapping for package managers.
-declare -A REPO_BASE_URLS=(
-	["apt"]="https://packages-cf.termux.dev/apt/termux-main"
-	["pacman"]="https://service.termux-pacman.dev/main"
-)
+declare -A REPO_BASE_URLS
+REPO_BASE_URLS["apt"]=$(jq -r .packages.url "$TERMUX_SCRIPTDIR/repo.json")
+REPO_BASE_URLS["pacman"]="https://service.termux-pacman.dev/main"
+
 
 # The package manager that will be installed in bootstrap.
 # The default is 'apt'. Can be changed by using the '--pm' option.
@@ -481,7 +481,7 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 	# Additional.
 	pull_package ed
 	if [ ${TERMUX_PACKAGE_MANAGER} = "apt" ]; then
-		pull_package debianutils
+			pull_package debianutils
 	fi
 	pull_package dos2unix
 	pull_package inetutils
