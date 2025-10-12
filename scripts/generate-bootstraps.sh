@@ -24,7 +24,7 @@ TERMUX_PACKAGE_MANAGERS=("apt" "pacman")
 
 # The repository base urls mapping for package managers.
 declare -A REPO_BASE_URLS
-REPO_BASE_URLS["apt"]="https://packages-cf.termux.dev/apt/termux-main"
+REPO_BASE_URLS["apt"]="https://packages.termux.dev/apt/termux-main"
 REPO_BASE_URLS["pacman"]="https://service.termux-pacman.dev/main"
 
 
@@ -493,7 +493,7 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 
 	# Handle additional packages.
 	for add_pkg in "${ADDITIONAL_PACKAGES[@]}"; do
-		pull_package "$add_pkg"
+			pull_package "$add_pkg"
 	done
 	unset add_pkg
 
