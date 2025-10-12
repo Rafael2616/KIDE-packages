@@ -1,9 +1,10 @@
-name: Build Package for All Architectures
+name: Generate bootstrap archives
 
 on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,7 +16,6 @@ jobs:
       matrix:
         arch: [aarch64, arm, x86_64]
       fail-fast: false
-
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -37,49 +37,48 @@ jobs:
           TERMUX_JAVA_HOME: ${{ env.JAVA_HOME }}
         run: ./scripts/setup-android-sdk.sh
 
-      - name: Run build script for ${{ matrix.arch }}
-        run: |
-          sudo mkdir -p /data
-          sudo chown runner /data
-          ./build-package.sh -a ${{ matrix.arch }} ${{ github.event.inputs.package || 'cowsay' }}
+      - name: Create bootstrap archive for ${{ matrix.arch }}
+        env:
+          TERMUX_ON_DEVICE_BUILD: "true"
+        run: ./scripts/generate-bootstraps.sh --architectures ${{ matrix.arch }}
 
-
-      - name: Upload artifact for ${{ matrix.arch }}
+      - name: Store bootstrap artifact
         uses: actions/upload-artifact@v4
         with:
-          name: kide-package-${{ matrix.arch }}
-          path: output/
+          name: bootstrap-archive-${{ matrix.arch }}
+          path: "*.zip"
 
   publish:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download all artifacts
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed for git tag logic
+
+      - name: Download all bootstrap artifacts
         uses: actions/download-artifact@v4
         with:
-          path: all-packages
-
-      - name: Create ZIP archive
-        id: zip_packages
-        run: |
-          PACKAGE_NAME="${{ github.event.inputs.package || 'cowsay' }}"
-          ZIP_NAME="${PACKAGE_NAME}-all-arch.zip"
-          zip -r9 "${ZIP_NAME}" ./all-packages
-          echo "zip_name=${ZIP_NAME}" >> $GITHUB_OUTPUT
+          path: bootstrap_zips
 
       - name: Create Release Tag
         id: create_tag
         run: |
-          PACKAGE_NAME="${{ github.event.inputs.package || 'cowsay' }}"
-          TAG_DATE=$(date +%Y.%m.%d)
-          # A tag é baseada no nome do pacote e na data
-          NEW_TAG="${PACKAGE_NAME}-${TAG_DATE}"
-          echo "tag_name=${NEW_TAG}" >> $GITHUB_OUTPUT
+          new_tag_prefix="bootstrap-$(date "+%Y.%m.%d")"
+          latest_rev=$(git tag -l "${new_tag_prefix}-r*" | sed -n 's/.*-r\([0-9]*\).*/\1/p' | sort -rn | head -n1)
+          if [ -z "$latest_rev" ]; then
+            rev=1
+          else
+            rev=$((latest_rev + 1))
+          fi
+          new_tag="${new_tag_prefix}-r${rev}"
+          echo "tag_name=${new_tag}" >> $GITHUB_OUTPUT
 
-      - name: Publish Release with all packages
+      - name: Publish Bootstrap Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.create_tag.outputs.tag_name }}
-          name: "Package ${{ github.event.inputs.package || 'cowsay' }} - ${{ steps.create_tag.outputs.tag_name }}"
-          body: "Automated build of ${{ github.event.inputs.package || 'cowsay' }} for all architectures."
-          files: ${{ steps.zip_packages.outputs.zip_name }}
+          name: "Bootstrap - ${{ steps.create_tag.outputs.tag_name }}"
+          body: "Automated build of bootstrap archives for all supported architectures."
+          files: bootstrap_zips/**/*.zip
