@@ -24,7 +24,7 @@ TERMUX_PACKAGE_MANAGERS=("apt" "pacman")
 
 # The repository base urls mapping for package managers.
 declare -A REPO_BASE_URLS
-REPO_BASE_URLS["apt"]=$(jq -r .packages.url "$TERMUX_SCRIPTDIR/repo.json")
+REPO_BASE_URLS["apt"]="https://packages-cf.termux.dev/apt/termux-main"
 REPO_BASE_URLS["pacman"]="https://service.termux-pacman.dev/main"
 
 
