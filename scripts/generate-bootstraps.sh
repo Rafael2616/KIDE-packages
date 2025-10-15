@@ -24,7 +24,7 @@ TERMUX_PACKAGE_MANAGERS=("apt" "pacman")
 
 # The repository base urls mapping for package managers.
 declare -A REPO_BASE_URLS=(
-	["apt"]="https://rafael2616.github.io/KIDE-packages/"
+	["apt"]="https://packages.termux.dev/apt/termux-main"
 	["pacman"]="https://service.termux-pacman.dev/main"
 )
 
