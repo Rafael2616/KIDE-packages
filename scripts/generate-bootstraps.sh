@@ -71,7 +71,7 @@ read_package_list_deb() {
 		fi
 
 		echo "[*] Reading package list for '${architecture}'..."
-		while read -r -d $'\\xFF' package; do
+		while read -r -d $'\xFF' package; do
 			if [ -n "$package" ]; then
 				local package_name
 				package_name=$(echo "$package" | grep -i "^Package:" | awk '{ print $2 }')
@@ -85,12 +85,12 @@ read_package_list_deb() {
 
 					# If package has multiple versions, make sure that our metadata
 					# contains the latest one.
-					if [ "$(echo -e "${prev_package_ver}\\n${cur_package_ver}" | sort -rV | head -n1)" = "${cur_package_ver}" ]; then
+					if [ "$(echo -e "${prev_package_ver}\n${cur_package_ver}" | sort -rV | head -n1)" = "${cur_package_ver}" ]; then
 						PACKAGE_METADATA["$package_name"]="$package"
 					fi
 				fi
 			fi
-		done < <(sed -e "s/^$/\\xFF/g" "${BOOTSTRAP_TMPDIR}/packages.${architecture}")
+		done < <(sed -e "s/^$/\xFF/g" "${BOOTSTRAP_TMPDIR}/packages.${architecture}")
 	done
 }
 
@@ -104,11 +104,11 @@ download_db_packages_pac() {
 }
 
 read_db_packages_pac() {
-	jq -r '.\"'${package_name}'\".\"'${1}'\"' | if type == "array" then .[] else . end' "${PATH_DB_PACKAGES}"
+	jq -r '."'${package_name}'"."'${1}'" | if type == "array" then .[] else . end' "${PATH_DB_PACKAGES}"
 }
 
 print_desc_package_pac() {
-	echo -e "%${1}%\\n${2}\\n"
+	echo -e "%${1}%\n${2}\n"
 }
 
 # Download specified package, its dependencies and then extract *.deb or *.pkg.tar.xz files to
@@ -129,8 +129,8 @@ pull_package() {
 		local package_dependencies
 		package_dependencies=$(
 			while read -r token; do
-				echo "$token" | cut -d'|' -f1 | sed -E 's@\\(.*\\)@@'
-			done < <(echo "${PACKAGE_METADATA[${package_name}]}" | grep -i "^Depends:" | sed -E 's@^[Dd]epends:@@' | tr ',' '\\n')
+				echo "$token" | cut -d'|' -f1 | sed -E 's@\(.*\)@@'
+			done < <(echo "${PACKAGE_METADATA[${package_name}]}" | grep -i "^Depends:" | sed -E 's@^[Dd]epends:@@' | tr ',' '\n')
 		)
 
 		# Recursively handle dependencies.
@@ -177,11 +177,11 @@ pull_package() {
 
 				if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
 					# Register extracted files.
-					tar tf "$data_archive" | sed -E -e 's@^\\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
+					tar tf "$data_archive" | sed -E -e 's@^\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
 
 					# Generate checksums (md5).
 					tar xf "$data_archive"
-					find data -type f -print0 | xargs -0 -r md5sum | sed 's@^\\.$@@g' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.md5sums"
+					find data -type f -print0 | xargs -0 -r md5sum | sed 's@^\.$@@g' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.md5sums"
 
 					# Extract metadata.
 					tar xf "$control_archive"
@@ -237,7 +237,7 @@ pull_package() {
 						"VALIDATION $(test $(read_db_packages_pac PGPSIG) != 'null' && echo 'pgp' || echo 'sha256')"; do
 						print_desc_package_pac ${i}
 					done
-					jq -r -j '.\"'${package_name}'\" | to_entries | .[] | select(.key | contains('$(sed 's/^/"/; s/ /","/g; s/$/"/' <<< ${keys_desc})')) | "%",(if .key == "ISIZE" then "SIZE" else .key end),"%\\n",.value,"\\n\\n" | if type == "array" then (.| join("\\n")) else . end' \
+					jq -r -j '."'${package_name}'" | to_entries | .[] | select(.key | contains('$(sed 's/^/"/; s/ /","/g; s/$/"/' <<< ${keys_desc})')) | "%",(if .key == "ISIZE" then "SIZE" else .key end),"%\n",.value,"\n\n" | if type == "array" then (.| join("\n")) else . end' \
 						"${PATH_DB_PACKAGES}"
 				} >> "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/pacman/local/${package_desc}/desc"
 			)
@@ -265,7 +265,6 @@ add_termux_bootstrap_second_stage_files() {
 	chmod 700 "${BOOTSTRAP_ROOTFS}/${TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR}/$TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE"
 
 	# TODO: Remove it when Termux app supports `pacman` bootstraps installation.
-	mkdir -p "${BOOTSTRAP_ROOTFS}/${TERMUX__PREFIX__PROFILE_D_DIR}"
 	sed -e "s|@TERMUX_PREFIX@|${TERMUX_PREFIX}|g" \
 		-e "s|@TERMUX__PREFIX__PROFILE_D_DIR@|${TERMUX__PREFIX__PROFILE_D_DIR}|g" \
 		-e "s|@TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR@|${TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR}|g" \
@@ -311,7 +310,7 @@ show_usage() {
 	echo " -a, --add PKG_LIST          Specify one or more additional packages"
 	echo "                             to include into bootstrap archive."
 	echo "                             Multiple packages should be passed as"
-		echo "                             comma-separated list."
+	echo "                             comma-separated list."
 	echo
 	echo " --pm MANAGER                Set up a package manager in bootstrap."
 	echo "                             It can only be pacman or apt (the default is apt)."
@@ -481,7 +480,7 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 	# Additional.
 	pull_package ed
 	if [ ${TERMUX_PACKAGE_MANAGER} = "apt" ]; then
-			pull_package debianutils
+		pull_package debianutils
 	fi
 	pull_package dos2unix
 	pull_package inetutils
