@@ -110,6 +110,160 @@ __termux_build_props__add_variables_validator_actions() {
 
 
 
+####
+# Variables for validating Termux variables.
+####
+
+##
+# Regex that matches an absolute path that starts with a `/` with at
+# least one characters under rootfs `/`. Duplicate or trailing path
+# separators `/` are not allowed.
+##
+TERMUX_REGEX__ABSOLUTE_PATH='^(/[^/]+)+$'
+
+##
+# Regex that matches a relative path that does not start with a `/`.
+# Duplicate or trailing path separators `/` are not allowed.
+##
+TERMUX_REGEX__RELATIVE_PATH='^[^/]+(/[^/]+)*$'
+
+##
+# Regex that matches (rootfs `/`) or (an absolute path that starts
+# with a `/`). Duplicate or trailing path separators `/` are not
+# allowed.
+##
+TERMUX_REGEX__ROOTFS_OR_ABSOLUTE_PATH='^((/)|((/[^/]+)+))$'
+
+
+##
+# Regex that matches a safe absolute path that starts with a `/` with
+# at least one characters under rootfs `/`. Duplicate or trailing path
+# separators `/` are not allowed. The path component characters must
+# be in the range `[a-zA-Z0-9+,.=_-]`.
+#
+# The path must also be validated against
+# `TERMUX_REGEX__SINGLE_OR_DOUBLE_DOT_CONTAINING_PATH`.
+##
+TERMUX_REGEX__SAFE_ABSOLUTE_PATH='^(/[a-zA-Z0-9+,.=_-]+)+$'
+
+##
+# Regex that matches a safe relative path that does not start with a
+# `/`. Duplicate or trailing path separators `/` are not allowed. The
+# path component characters must be in the range `[a-zA-Z0-9+,.=_-]`.
+#
+# The path must also be validated against
+# `TERMUX_REGEX__SINGLE_OR_DOUBLE_DOT_CONTAINING_PATH`.
+##
+TERMUX_REGEX__SAFE_RELATIVE_PATH='^[a-zA-Z0-9+,.=_-]+(/[a-zA-Z0-9+,.=_-]+)*$'
+
+##
+# Regex that matches (rootfs `/`) or (a safe absolute path that starts
+# with a `/`). Duplicate or trailing path separators `/` are not
+# allowed. The path component characters must be in the range
+# `[a-zA-Z0-9+,.=_-]`.
+#
+# The path must also be validated against
+# `TERMUX_REGEX__SINGLE_OR_DOUBLE_DOT_CONTAINING_PATH`.
+##
+TERMUX_REGEX__SAFE_ROOTFS_OR_ABSOLUTE_PATH='^((/)|((/[a-zA-Z0-9+,.=_-]+)+))$'
+
+
+##
+# Regex that matches a path containing single `/./` or double `/../` dot components.
+##
+TERMUX_REGEX__SINGLE_OR_DOUBLE_DOT_CONTAINING_PATH='((^\./)|(^\.\./)|(/\.$)|(/\.\.$)|(/\./)|(/\.\./))'
+
+
+##
+# Regex that matches invalid Termux rootfs paths.
+#
+# The Termux rootfs or prefix paths must not be equal to or be under
+# specific Filesystem Hierarchy Standard paths or paths used by Termux
+# docker image/host OS for its own files, as Termux packages files
+# must be kept separate from the build host. The Termux app data/prefix
+# directories are also wiped by `clean.sh` when not running on-device,
+# which wouldn't be possible if Termux and host directories are shared.
+#
+# The invalid paths list does not include the `/data` and `/mnt/expand`
+# paths under which private app data directories are assigned to
+# Android apps, or the `/data/local/tmp` directory assigned to `adb`
+# `shell` user, or the `/system` directory for the Android system.
+#
+# - https://refspecs.linuxfoundation.org/FHS_3.0/fhs-3.0.html
+# - https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard
+# - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-private-app-data-directory
+##
+TERMUX_REGEX__INVALID_TERMUX_ROOTFS_PATHS='^((/bin(/.*)?)|(/boot(/.*)?)|(/dev(/.*)?)|(/etc(/.*)?)|(/home)|(/lib(/.*)?)|(/lib[^/]+(/.*)?)|(/media)|(/mnt)|(/opt)|(/proc(/.*)?)|(/root)|(/run(/.*)?)|(/sbin(/.*)?)|(/srv(/.*)?)|(/sys(/.*)?)|(/tmp(/.*)?)|(/usr)|(/usr/local)|(((/usr/)|(/usr/local/))((bin)|(games)|(include)|(lib)|(libexec)|(lib[^/]+)|(sbin)|(share)|(src)|(X11R6))(/.*)?)|(/var(/.*)?)|(/bin.usr-is-merged)|(/lib.usr-is-merged)|(/sbin.usr-is-merged)|(/.dockerinit)|(/.dockerenv))$'
+
+##
+# Regex that matches invalid Termux home paths.
+#
+# Same reasoning as `TERMUX_REGEX__INVALID_TERMUX_ROOTFS_PATHS`,
+# and invalid paths are the same as well except that `/home` is
+# allowed, and `/` and all paths under `/usr` are not allowed.
+#
+# `/home` is allowed as package data files are not packaged from there.
+##
+TERMUX_REGEX__INVALID_TERMUX_HOME_PATHS='^((/)|(/bin(/.*)?)|(/boot(/.*)?)|(/dev(/.*)?)|(/etc(/.*)?)|(/lib(/.*)?)|(/lib[^/]+(/.*)?)|(/media)|(/mnt)|(/opt)|(/proc(/.*)?)|(/root)|(/run(/.*)?)|(/sbin(/.*)?)|(/srv(/.*)?)|(/sys(/.*)?)|(/tmp(/.*)?)|(/usr(/.*)?)|(/var(/.*)?)|(/bin.usr-is-merged)|(/lib.usr-is-merged)|(/sbin.usr-is-merged)|(/.dockerinit)|(/.dockerenv))$'
+
+##
+# Regex that matches invalid Termux prefix paths.
+#
+# Same reasoning as `TERMUX_REGEX__INVALID_TERMUX_ROOTFS_PATHS`,
+# and invalid paths are the same as well except that `/` is not
+# allowed.
+##
+TERMUX_REGEX__INVALID_TERMUX_PREFIX_PATHS='^((/)|(/bin(/.*)?)|(/boot(/.*)?)|(/dev(/.*)?)|(/etc(/.*)?)|(/home)|(/lib(/.*)?)|(/lib[^/]+(/.*)?)|(/media)|(/mnt)|(/opt)|(/proc(/.*)?)|(/root)|(/run(/.*)?)|(/sbin(/.*)?)|(/srv(/.*)?)|(/sys(/.*)?)|(/tmp(/.*)?)|(/usr)|(/usr/local)|(((/usr/)|(/usr/local/))((bin)|(games)|(include)|(lib)|(libexec)|(lib[^/]+)|(sbin)|(share)|(src)|(X11R6))(/.*)?)|(/var(/.*)?)|(/bin.usr-is-merged)|(/lib.usr-is-merged)|(/sbin.usr-is-merged)|(/.dockerinit)|(/.dockerenv))$'
+
+
+##
+# Regex that matches an unsigned integer `>= 0`.
+##
+TERMUX_REGEX__UNSIGNED_INT='^[0-9]+$'
+
+
+##
+# Regex to match an android app package name.
+#
+# The package name must have at least two segments separated by a dot
+# `.`, where each segment must start with at least one character in
+# the range `[a-zA-Z]`, followed by zero or more characters in the
+# range `[a-zA-Z0-9_]`. The package name length must also be
+# `<= 255` (`NAME_MAX` for ext4 partitions). The length is not checked
+# by this regex and it must be checked with `TERMUX__NAME_MAX`, as
+# `bash` `=~` regex conditional does not support lookaround.
+#
+# Unlike Android, the Termux app package name max length is not `255`
+# as its limited by `TERMUX__APPS_DIR___MAX_LEN` and `TERMUX__ROOTFS_DIR___MAX_LEN`.
+#
+# - https://developer.android.com/build/configure-app-module#set-application-id
+# - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:frameworks/base/core/java/android/content/pm/parsing/ApkLiteParseUtils.java;l=669-677
+# - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:frameworks/base/core/java/android/content/pm/parsing/FrameworkParsingPackageUtils.java;l=63-103
+# - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:frameworks/base/core/java/android/os/FileUtils.java;l=954-994
+# - https://cs.android.com/android/platform/superproject/+/android-14.0.0_r1:frameworks/base/core/java/android/content/pm/PackageManager.java;l=2147-2155
+##
+TERMUX_REGEX__APP_PACKAGE_NAME="^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$"
+
+##
+# Regex to match an android app data path.
+#
+# The supported formats are:
+# - `/data/data/<package_name>` (for primary user `0`) if app is to be
+#   installed on internal sd.
+# - `/data/user/<user_id>/<package_name>` (for all users) if app is to
+#   be installed on internal sd.
+# `/mnt/expand/<volume_uuid>/user/<user_id>/<package_name>` if app is
+#  to be installed on a removable/portable volume/sd card being used as
+#  adoptable storage.
+#
+# - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-private-app-data-directory
+##
+TERMUX_REGEX__APP_DATA_DIR_PATH='^(((/data/data)|(/data/user/[0-9]+)|(/mnt/expand/[^/]+/user/[0-9]+))/[^/]+)$'
+
+
+
+
+
 ###
 # Variables for the Termux build tools.
 ###
@@ -151,6 +305,7 @@ TERMUX_ANDROID_BUILD_TOOLS_VERSION=33.0.1
 # change TERMUX_PKG_VERSION (and remove TERMUX_PKG_REVISION if necessary) in:
 #   apksigner, d8
 # and trigger rebuild of them
+: "${TERMUX_NDK_VERSION_NUM:="28"}"
 : "${TERMUX_NDK_VERSION_NUM:="27"}"
 : "${TERMUX_NDK_REVISION:="c"}"
 TERMUX_NDK_VERSION="${TERMUX_NDK_VERSION_NUM}${TERMUX_NDK_REVISION}"
@@ -159,6 +314,9 @@ TERMUX_NDK_VERSION="${TERMUX_NDK_VERSION_NUM}${TERMUX_NDK_REVISION}"
 #   libandroid-stub, libc++, ndk-multilib, ndk-sysroot, vulkan-loader-android
 # and update SHA256 sums in scripts/setup-android-sdk.sh
 # check all packages build and run correctly and bump if needed
+
+: "${TERMUX_HOST_LLVM_MAJOR_VERSION:="19"}"
+: "${TERMUX_HOST_LLVM_BASE_DIR:="/usr/lib/llvm-${TERMUX_HOST_LLVM_MAJOR_VERSION}"}"
 
 : "${TERMUX_JAVA_HOME:=/usr/lib/jvm/java-17-openjdk-amd64}"
 export JAVA_HOME="${TERMUX_JAVA_HOME}"
@@ -305,8 +463,10 @@ TERMUX__REPOS_HOST_ORG_URL="https://github.com/$TERMUX__REPOS_HOST_ORG_NAME"
 # - https://developer.android.com/build/configure-app-module#set-application-id
 # - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-private-app-data-directory
 #
+# Default value: `com.rafael.kide`
 # Default value: `com.termux`
 ##
+TERMUX_APP__PACKAGE_NAME="com.rafael.kide"
 TERMUX_APP__PACKAGE_NAME="com.termux"
 TERMUX_APP_PACKAGE="$TERMUX_APP__PACKAGE_NAME" # Deprecated alternative variable for `TERMUX_APP__PACKAGE_NAME`
 
@@ -326,6 +486,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX_APP__PACKAGE_NAME"
 # sure a safe path is set if running `clean.sh` in Termux docker or
 # host OS build environment.
 #
+# Default value: `/data/data/com.rafael.kide`
 # Default value: `/data/data/com.termux`
 ##
 TERMUX_APP__DATA_DIR="/data/data/$TERMUX_APP__PACKAGE_NAME"
@@ -374,6 +535,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX__PROJECT_SUBDIR" "
 #
 # - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-project-directory
 #
+# Default value: `/data/data/com.rafael.kide/termux`
 # Default value: `/data/data/com.termux/termux`
 ##
 TERMUX__PROJECT_DIR="$TERMUX_APP__DATA_DIR/$TERMUX__PROJECT_SUBDIR"
@@ -398,6 +560,7 @@ TERMUX__CORE_SUBDIR="core"
 #
 # - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-core-directory
 #
+# Default value: `/data/data/com.rafael.kide/termux/core`
 # Default value: `/data/data/com.termux/termux/core`
 ##
 TERMUX__CORE_DIR="$TERMUX__PROJECT_DIR/$TERMUX__CORE_SUBDIR"
@@ -425,6 +588,7 @@ TERMUX__APPS_SUBDIR="app"
 #
 # - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-apps-directory
 #
+# Default value: `/data/data/com.rafael.kide/termux/app`
 # Default value: `/data/data/com.termux/termux/app`
 ##
 TERMUX__APPS_DIR="$TERMUX__PROJECT_DIR/$TERMUX__APPS_SUBDIR"
@@ -464,6 +628,7 @@ TERMUX__APPS_DIR_BY_IDENTIFIER_SUBDIR="i"
 ##
 # Termux apps directory path by app identifier under `TERMUX__APPS_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/termux/app/i`
 # Default value: `/data/data/com.termux/termux/app/i`
 ##
 TERMUX__APPS_DIR_BY_IDENTIFIER="$TERMUX__APPS_DIR/$TERMUX__APPS_DIR_BY_IDENTIFIER_SUBDIR"
@@ -511,6 +676,7 @@ TERMUX__APPS_DIR_BY_UID_SUBDIR="u"
 # Termux apps directory path by app uid (user_id + app_id) under
 # `TERMUX__APPS_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/termux/app/u`
 # Default value: `/data/data/com.termux/termux/app/u`
 ##
 TERMUX__APPS_DIR_BY_UID="$TERMUX__APPS_DIR/$TERMUX__APPS_DIR_BY_UID_SUBDIR"
@@ -624,6 +790,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX__ROOTFS_SUBDIR" "a
 # the `TERMUX_APP__DATA_DIR` if compiling packages for the Android
 # system or `adb` `shell` user.
 #
+# Default value: `/data/data/com.rafael.kide/files`
 # Default value: `/data/data/com.termux/files`
 ##
 TERMUX__ROOTFS="$TERMUX_APP__DATA_DIR/$TERMUX__ROOTFS_SUBDIR"
@@ -675,6 +842,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX__HOME_SUBDIR" "saf
 # The Termux home must not be set to Android/Linux rootfs `/` or any
 # other path in `TERMUX_REGEX__INVALID_TERMUX_HOME_PATHS`.
 #
+# Default value: `/data/data/com.rafael.kide/files/home`
 # Default value: `/data/data/com.termux/files/home`
 ##
 [[ "$TERMUX__ROOTFS" != "/" ]] && TERMUX__HOME="$TERMUX__ROOTFS/$TERMUX__HOME_SUBDIR" || \
@@ -686,6 +854,7 @@ TERMUX_ANDROID_HOME="$TERMUX__HOME" # Deprecated alternative variable for `TERMU
 ##
 # Termux legacy project user config directory path under `TERMUX__HOME`.
 #
+# Default value: `/data/data/com.rafael.kide/files/home/.termux`
 # Default value: `/data/data/com.termux/files/home/.termux`
 ##
 TERMUX__LEGACY_PROJECT_USER_CONFIG_DIR="$TERMUX__HOME/.termux"
@@ -776,6 +945,16 @@ __termux_build_props__add_variables_validator_actions "TERMUX__PREFIX_SUBDIR" "a
 # on-device, so make sure a safe path is set if running `clean.sh` in
 # Termux docker or host OS build environment.
 #
+# At runtime, `TERMUX__PREFIX` may be overridden and set to
+# `TERMUX__PREFIX_GLIBC` when compiling `glibc` packages by calling
+# `termux_build_props__set_termux_prefix_dir_and_sub_variables` in
+# `termux_step_setup_variables` if `TERMUX_PACKAGE_LIBRARY` equals `glibc`.
+# However, `TERMUX__PREFIX_CLASSICAL` retains the original value
+# set below for `TERMUX__PREFIX`.
+# - https://github.com/termux/termux-packages/pull/16901
+# - https://github.com/termux/termux-packages/pull/20864
+#
+# Default value: `/data/data/com.rafael.kide/files/usr`
 # Default value: `/data/data/com.termux/files/usr`
 ##
 [[ "$TERMUX__ROOTFS" != "/" ]] && TERMUX__PREFIX="$TERMUX__ROOTFS${TERMUX__PREFIX_SUBDIR:+"/$TERMUX__PREFIX_SUBDIR"}" || \
@@ -794,7 +973,42 @@ TERMUX__PREFIX_CLASSICAL="$TERMUX__PREFIX"
 # `/glibc` in `termux_step_setup_variables()`.
 # - https://github.com/termux/termux-packages/pull/16901
 TERMUX_PREFIX="$TERMUX__PREFIX" # Deprecated alternative variable for `TERMUX__PREFIX`
+
+
+
+##
+# The original value for `TERMUX__PREFIX` set above, as `TERMUX__PREFIX`
+# can be overridden at runtime, like when compiling `glibc` packages.
+# Checks variable docs of `TERMUX__PREFIX` for more info.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr`
+##
+TERMUX__PREFIX_CLASSICAL="$TERMUX__PREFIX"
 TERMUX_PREFIX_CLASSICAL="$TERMUX__PREFIX" # Deprecated alternative variable for `TERMUX__PREFIX_CLASSICAL`
+
+
+
+##
+# Termux subdirectory path for `TERMUX__PREFIX_GLIBC`.
+#
+# Default value: `glibc`
+##
+TERMUX__PREFIX_GLIBC_SUBDIR="glibc"
+
+##
+# Termux `glibc` prefix directory path under `TERMUX__PREFIX`
+# where all Termux `glibc` packages data is installed.
+#
+# **See Also:**
+# - https://github.com/termux-pacman/glibc-packages
+# - https://github.com/termux/glibc-packages (mirror)
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/glibc`
+##
+TERMUX__PREFIX_GLIBC="$TERMUX__PREFIX/$TERMUX__PREFIX_GLIBC_SUBDIR"
+__termux_build_props__add_variables_validator_actions "TERMUX__PREFIX_GLIBC" "safe_absolute_path invalid_termux_prefix_paths path_under_termux_rootfs"
+
+
 
 ##
 # The max length for the `TERMUX__PREFIX` including the null '\0'
@@ -865,6 +1079,59 @@ TERMUX__FILE_HEADER__BUFFER_SIZE="340"
 
 
 
+
+##
+# `termux_build_props__set_termux_prefix_dir_and_sub_variables` `<termux__prefix>` [`<skip_validation>`]
+##
+termux_build_props__set_termux_prefix_dir_and_sub_variables() {
+
+local termux__prefix="${1:-}"
+local skip_validation="${2:-}"
+
+if [[ "$skip_validation" != "true" ]]; then
+    if [[ ! "$termux__prefix" =~ ${TERMUX_REGEX__SAFE_ABSOLUTE_PATH:?} ]] || \
+            [[ "$termux__prefix" =~ ${TERMUX_REGEX__SINGLE_OR_DOUBLE_DOT_CONTAINING_PATH:?} ]]; then
+        echo "The termux__prefix '$termux__prefix' passed to 'termux_build_props__set_termux_prefix_dir_and_sub_variables' with length ${#termux__prefix} is invalid." 1>&2
+        echo "The termux__prefix must match a safe absolute path that starts with a \`/\` with at least one \
+characters under rootfs \`/\`. Duplicate or trailing path separators \`/\` are not allowed. \
+The path component characters must be in the range \`[a-zA-Z0-9+,.=_-]\`. The path must not contain single \`/./\` or \
+double \`/../\` dot components." 1>&2
+        return 1
+    fi
+
+    if [[ "$termux__prefix" =~ ${TERMUX_REGEX__INVALID_TERMUX_PREFIX_PATHS:?} ]]; then
+        echo "The termux__prefix '$termux__prefix' passed to 'termux_build_props__set_termux_prefix_dir_and_sub_variables' with length ${#termux__prefix} is invalid." 1>&2
+        echo "The termux__prefix must not match one of the invalid paths \
+in TERMUX_REGEX__INVALID_TERMUX_PREFIX_PATHS \`$TERMUX_REGEX__INVALID_TERMUX_PREFIX_PATHS\`." 1>&2
+        return 1
+    fi
+fi
+
+
+# Override `TERMUX__PREFIX`, but keep original value in `TERMUX__PREFIX_CLASSICAL`.
+TERMUX__PREFIX="$termux__prefix"
+TERMUX_PREFIX="$termux__prefix"
+
+
+
+##
+# Termux subdirectory path for `TERMUX__PREFIX__BIN_DIR`.
+#
+# Constant value: `bin`
+##
+TERMUX__PREFIX__BIN_SUBDIR="bin"
+
+##
+# Termux bin directory path under `TERMUX__PREFIX`.
+#
+# - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-bin-directory
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/bin`
+##
+TERMUX__PREFIX__BIN_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__BIN_SUBDIR"
+
+
+
 ##
 # Termux subdirectory path for `TERMUX__PREFIX__ETC_DIR`.
 #
@@ -875,31 +1142,100 @@ TERMUX__PREFIX__ETC_SUBDIR="etc"
 ##
 # Termux etc directory path under `TERMUX__PREFIX`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/etc`
 # Default value: `/data/data/com.termux/files/usr/etc`
 ##
 TERMUX__PREFIX__ETC_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__ETC_SUBDIR"
 
 
+
 ##
+# Termux subdirectory path for `TERMUX__PREFIX__BASE_INCLUDE_DIR`.
 # Termux subdirectory path for `TERMUX__PREFIX__INCLUDE_DIR`.
 #
 # Constant value: `include`
 ##
+TERMUX__PREFIX__BASE_INCLUDE_SUBDIR="include"
+
+##
+# Termux base include directory path under `TERMUX__PREFIX`.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/include`
+##
+TERMUX__PREFIX__BASE_INCLUDE_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__BASE_INCLUDE_SUBDIR"
+
+
+##
+# Termux subdirectory path for `TERMUX__PREFIX__MULTI_INCLUDE_DIR`.
+#
+# Constant value: `include32`
+##
+TERMUX__PREFIX__MULTI_INCLUDE_SUBDIR="include32"
+
+##
+# Termux multi include directory path under `TERMUX__PREFIX`.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/include32`
+##
+TERMUX__PREFIX__MULTI_INCLUDE_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__MULTI_INCLUDE_SUBDIR"
+
+
+##
+# Termux include subdirectory path under `TERMUX__PREFIX`.
+#
+# Default value: `include`
+##
+TERMUX__PREFIX__INCLUDE_SUBDIR="$TERMUX__PREFIX__BASE_INCLUDE_SUBDIR"
 TERMUX__PREFIX__INCLUDE_SUBDIR="include"
 
 ##
 # Termux include directory path under `TERMUX__PREFIX`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/include` (`$TERMUX__PREFIX__BASE_INCLUDE_DIR`)
 # Default value: `/data/data/com.termux/files/usr/include`
 ##
+TERMUX__PREFIX__INCLUDE_DIR="$TERMUX__PREFIX__BASE_INCLUDE_DIR"
+
 TERMUX__PREFIX__INCLUDE_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__INCLUDE_SUBDIR"
 
 
 ##
+# Termux subdirectory path for `TERMUX__PREFIX__BASE_LIB_DIR`.
 # Termux subdirectory path for `TERMUX__PREFIX__LIB_DIR`.
 #
 # Constant value: `lib`
 ##
+TERMUX__PREFIX__BASE_LIB_SUBDIR="lib"
+
+##
+# Termux base lib directory path under `TERMUX__PREFIX`.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/lib`
+##
+TERMUX__PREFIX__BASE_LIB_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__BASE_LIB_SUBDIR"
+
+
+##
+# Termux subdirectory path for `TERMUX__PREFIX__MULTI_LIB_DIR`.
+#
+# Constant value: `lib32`
+##
+TERMUX__PREFIX__MULTI_LIB_SUBDIR="lib32"
+
+##
+# Termux multi lib directory path under `TERMUX__PREFIX`.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/lib32`
+##
+TERMUX__PREFIX__MULTI_LIB_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__MULTI_LIB_SUBDIR"
+
+
+##
+# Termux lib subdirectory path under `TERMUX__PREFIX`.
+#
+# Default value: `lib`
+##
+TERMUX__PREFIX__LIB_SUBDIR="$TERMUX__PREFIX__BASE_LIB_SUBDIR"
 TERMUX__PREFIX__LIB_SUBDIR="lib"
 
 ##
@@ -907,8 +1243,11 @@ TERMUX__PREFIX__LIB_SUBDIR="lib"
 #
 # - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-lib-directory
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/lib` (`$TERMUX__PREFIX__BASE_LIB_DIR`)
 # Default value: `/data/data/com.termux/files/usr/lib`
 ##
+TERMUX__PREFIX__LIB_DIR="$TERMUX__PREFIX__BASE_LIB_DIR"
+
 TERMUX__PREFIX__LIB_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__LIB_SUBDIR"
 
 
@@ -922,9 +1261,11 @@ TERMUX__PREFIX__LIBEXEC_SUBDIR="libexec"
 ##
 # Termux libexec directory path under `TERMUX__PREFIX`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/libexec`
 # Default value: `/data/data/com.termux/files/usr/libexec`
 ##
 TERMUX__PREFIX__LIBEXEC_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__LIBEXEC_SUBDIR"
+
 
 
 ##
@@ -937,9 +1278,11 @@ TERMUX__PREFIX__OPT_SUBDIR="opt"
 ##
 # Termux opt directory path under `TERMUX__PREFIX`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/opt`
 # Default value: `/data/data/com.termux/files/usr/opt`
 ##
 TERMUX__PREFIX__OPT_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__OPT_SUBDIR"
+
 
 
 ##
@@ -952,10 +1295,41 @@ TERMUX__PREFIX__SHARE_SUBDIR="share"
 ##
 # Termux share directory path under `TERMUX__PREFIX`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/share`
 # Default value: `/data/data/com.termux/files/usr/share`
 ##
 TERMUX__PREFIX__SHARE_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__SHARE_SUBDIR"
 
+
+
+##
+# Termux subdirectory path for `TERMUX__PREFIX__VAR_DIR`.
+#
+# Constant value: `var`
+##
+TERMUX__PREFIX__VAR_SUBDIR="var"
+
+##
+# Termux var directory path under `TERMUX__PREFIX`.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/var`
+##
+TERMUX__PREFIX__VAR_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__VAR_SUBDIR"
+
+}
+
+# Set Termux prefix sub variables to be under the original value of
+# `TERMUX__PREFIX` set in `TERMUX__PREFIX_CLASSICAL` by default,
+# which is set earlier in this file.
+# Skip validation as it will be done below by `__termux_build_props__validate_variables`.
+termux_build_props__set_termux_prefix_dir_and_sub_variables "$TERMUX__PREFIX" "true" || exit $?
+
+
+
+
+
+# The following variables must always be under the original value of
+# `TERMUX__PREFIX` set in `TERMUX__PREFIX_CLASSICAL` by default.
 
 ##
 # Termux subdirectory path for `TERMUX__PREFIX__TMP_DIR`.
@@ -967,6 +1341,7 @@ TERMUX__PREFIX__TMP_SUBDIR="tmp"
 ##
 # Termux tmp directory path under `TERMUX__PREFIX`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/tmp`
 # Default value: `/data/data/com.termux/files/usr/tmp`
 ##
 TERMUX__PREFIX__TMP_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__TMP_SUBDIR"
@@ -1002,6 +1377,7 @@ TERMUX__PREFIX__VAR_DIR="$TERMUX__PREFIX/$TERMUX__PREFIX__VAR_SUBDIR"
 ##
 # Termux `profile.d` directory path under `TERMUX__PREFIX__ETC_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/etc/profile.d`
 # Default value: `/data/data/com.termux/files/usr/etc/profile.d`
 ##
 TERMUX__PREFIX__PROFILE_D_DIR="$TERMUX__PREFIX__ETC_DIR/profile.d"
@@ -1010,6 +1386,7 @@ TERMUX__PREFIX__PROFILE_D_DIR="$TERMUX__PREFIX__ETC_DIR/profile.d"
 ##
 # Termux project system config directory path under `TERMUX__PREFIX__ETC_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/etc/termux`
 # Default value: `/data/data/com.termux/files/usr/etc/termux`
 ##
 TERMUX__PROJECT_SYSTEM_CONFIG_DIR="$TERMUX__PREFIX__ETC_DIR/$TERMUX__INTERNAL_NAME"
@@ -1058,6 +1435,7 @@ TERMUX__CACHE_SUBDIR="cache"
 #
 # - https://github.com/termux/termux-packages/wiki/Termux-file-system-layout#termux-app-cache-directory
 #
+# Default value: `/data/data/com.rafael.kide/cache`
 # Default value: `/data/data/com.termux/cache`
 ##
 TERMUX__CACHE_DIR="$TERMUX_APP__DATA_DIR/$TERMUX__CACHE_SUBDIR"
@@ -1070,14 +1448,41 @@ TERMUX_CACHE_DIR="$TERMUX__CACHE_DIR" # Deprecated alternative variable for `TER
 
 
 ####
+# Variables for the Termux bootstrap.
 # Variables for the Termux bootstraps.
 ####
 
 ##
+# Termux bootstrap system config directory path under `TERMUX__PROJECT_SYSTEM_CONFIG_DIR`.
 # Termux bootstrap config directory path under `TERMUX__PREFIX__TERMUX_DATA_ETC_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/files/usr/etc/termux/termux-bootstrap`
+##
+TERMUX_BOOTSTRAP__BOOTSTRAP_SYSTEM_CONFIG_DIR="$TERMUX__PROJECT_SYSTEM_CONFIG_DIR/termux-bootstrap"
+
+
 # Default value: `/data/data/com.termux/files/usr/etc/termux/bootstrap`
 ##
+# Termux subdirectory path for `TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR`.
+#
+# Constant value: `second-stage`
+##
+TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_SUBDIR="second-stage"
+
+##
+# Termux bootstrap second stage directory path under `TERMUX_BOOTSTRAP__BOOTSTRAP_SYSTEM_CONFIG_DIR`.
+#
+# Default value: `/data/data/com.rafael.kide/files/usr/etc/termux/termux-bootstrap/second-stage`
+##
+TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR="$TERMUX_BOOTSTRAP__BOOTSTRAP_SYSTEM_CONFIG_DIR/$TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_SUBDIR"
+
+
+##
+# Termux bootstrap second stage entry point subfile path path under `TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR`.
+#
+# Default value: `termux-bootstrap-second-stage.sh`
+##
+TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE="termux-bootstrap-second-stage.sh"
 TERMUX_BOOTSTRAPS__BOOTSTRAP_CONFIG_DIR="$TERMUX__PREFIX__TERMUX_DATA_ETC_DIR/bootstrap"
 
 
@@ -1512,8 +1917,10 @@ TERMUX_APP__REPO_URL="$TERMUX__REPOS_HOST_ORG_URL/$TERMUX_APP__REPO_NAME"
 # - https://developer.android.com/build/configure-app-module#set-namespace
 # - https://github.com/termux/termux-app/tree/master/app/src/main/java/com/termux
 #
+# Default value: `com.rafael.kide`
 # Default value: `com.termux`
 ##
+TERMUX_APP__NAMESPACE="com.rafael.kide"
 TERMUX_APP__NAMESPACE="com.termux"
 
 __termux_build_props__add_variables_validator_actions "TERMUX_APP__NAMESPACE" "app_package_name"
@@ -1523,6 +1930,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX_APP__NAMESPACE" "a
 ##
 # Termux app apps directory path under `TERMUX__APPS_DIR_BY_IDENTIFIER`.
 #
+# Default value: `/data/data/com.rafael.kide/termux/app/i/termux`
 # Default value: `/data/data/com.termux/termux/app/i/termux`
 ##
 TERMUX_APP__APP_DIR="$TERMUX__APPS_DIR_BY_IDENTIFIER/$TERMUX_APP__APP_IDENTIFIER"
@@ -1590,6 +1998,7 @@ TERMUX_APP__DATA_SENDER_API__DATA_SENDER_API_RECEIVER__CLASS_NAME="$TERMUX_APP__
 ##
 # Termux apps info environment file path for the Termux app under `TERMUX_APP__APP_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/termux/app/i/termux/termux-apps-info.env`
 # Default value: `/data/data/com.termux/termux/app/i/termux/termux-apps-info.env`
 ##
 TERMUX_APP__CORE__APPS_INFO_ENV_FILE="$TERMUX_APP__APP_DIR/$TERMUX_CORE__APPS_INFO_ENV_SUBFILE"
@@ -1598,6 +2007,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX_APP__CORE__APPS_IN
 ##
 # Termux apps info json file path for the Termux app under `TERMUX_APP__APP_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/termux/app/i/termux/termux-apps-info.json`
 # Default value: `/data/data/com.termux/termux/app/i/termux/termux-apps-info.json`
 ##
 TERMUX_APP__CORE__APPS_INFO_JSON_FILE="$TERMUX_APP__APP_DIR/$TERMUX_CORE__APPS_INFO_JSON_SUBFILE"
@@ -1606,6 +2016,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX_APP__CORE__APPS_IN
 ##
 # `termux-am-socket` server file path for the Termux app under `TERMUX_APP__APP_DIR`.
 #
+# Default value: `/data/data/com.rafael.kide/termux/app/i/termux/termux-am`
 # Default value: `/data/data/com.termux/termux/app/i/termux/termux-am`
 ##
 TERMUX_APP__AM_SOCKET__SERVER_SOCKET_FILE="$TERMUX_APP__APP_DIR/$TERMUX_AM_SOCKET__SERVER_SOCKET_SUBFILE"
@@ -2000,6 +2411,13 @@ TERMUX_REGEX__APP_DATA_DIR_PATH='^(((/data/data)|(/data/user/[0-9]+)|(/mnt/expan
 # and are compiled locally.
 # FIXME: Checking for all variables will be added later in repo
 # changes pull, currently only `TERMUX_REPO_APP__PACKAGE_NAME` is checked.
+TERMUX_REPO_APP__PACKAGE_NAME="com.rafael.kide"
+TERMUX_REPO_APP__DATA_DIR="/data/data/com.rafael.kide"
+TERMUX_REPO__CORE_DIR="/data/data/com.rafael.kide/termux/core"
+TERMUX_REPO__APPS_DIR="/data/data/com.rafael.kide/termux/app"
+TERMUX_REPO__ROOTFS="/data/data/com.rafael.kide/files"
+TERMUX_REPO__HOME="/data/data/com.rafael.kide/files/home"
+TERMUX_REPO__PREFIX="/data/data/com.rafael.kide/files/usr"
 TERMUX_REPO_APP__PACKAGE_NAME="com.termux"
 TERMUX_REPO_APP__DATA_DIR="/data/data/com.termux"
 TERMUX_REPO__CORE_DIR="/data/data/com.termux/termux/core"
@@ -2356,6 +2774,24 @@ including the null \`\0\` terminator." 1>&2
         return 1
     fi
 
+    if [[ "$TERMUX__PREFIX" == "$TERMUX__PREFIX_GLIBC" ]]; then
+        echo "The TERMUX__PREFIX '$TERMUX__PREFIX' or TERMUX__PREFIX_GLIBC '$TERMUX__PREFIX_GLIBC' is invalid." 1>&2
+        echo "The TERMUX__PREFIX must not be equal to TERMUX__PREFIX_GLIBC." 1>&2
+        return 1
+    fi
+
+    if [[ "$TERMUX__PREFIX__BASE_LIB_DIR" == "$TERMUX__PREFIX__MULTI_LIB_DIR" ]]; then
+        echo "The TERMUX__PREFIX__BASE_LIB_DIR '$TERMUX__PREFIX__BASE_LIB_DIR' or TERMUX__PREFIX__MULTI_LIB_DIR '$TERMUX__PREFIX__MULTI_LIB_DIR' is invalid." 1>&2
+        echo "The TERMUX__PREFIX__BASE_LIB_DIR must not be equal to TERMUX__PREFIX__MULTI_LIB_DIR." 1>&2
+        return 1
+    fi
+
+    if [[ "$TERMUX__PREFIX__BASE_INCLUDE_DIR" == "$TERMUX__PREFIX__MULTI_INCLUDE_DIR" ]]; then
+        echo "The TERMUX__PREFIX__BASE_INCLUDE_DIR '$TERMUX__PREFIX__BASE_INCLUDE_DIR' or TERMUX__PREFIX__MULTI_INCLUDE_DIR '$TERMUX__PREFIX__MULTI_INCLUDE_DIR' is invalid." 1>&2
+        echo "The TERMUX__PREFIX__BASE_INCLUDE_DIR must not be equal to TERMUX__PREFIX__MULTI_INCLUDE_DIR." 1>&2
+        return 1
+    fi
+
 }
 
 __termux_build_props__validate_variables || exit $?
@@ -2366,3 +2802,4 @@ unset __TERMUX_BUILD_PROPS__VALIDATE_PATHS_MAX_LEN
 unset __TERMUX_BUILD_PROPS__VALIDATE_TERMUX_PREFIX_USR_MERGE_FORMAT
 unset __termux_build_props__add_variables_validator_actions
 unset __termux_build_props__validate_variables
+
