@@ -24,7 +24,7 @@ TERMUX_PACKAGE_MANAGERS=("apt" "pacman")
 
 # The repository base urls mapping for package managers.
 declare -A REPO_BASE_URLS=(
-	["apt"]="https://packages-cf.termux.dev/apt/termux-main"
+	["apt"]="https://packages.termux.dev/apt/termux-main"
 	["pacman"]="https://service.termux-pacman.dev/main"
 )
 
@@ -104,7 +104,7 @@ download_db_packages_pac() {
 }
 
 read_db_packages_pac() {
-	jq -r '."'${package_name}'"."'${1}'" | if type == "array" then .[] else . end' "${PATH_DB_PACKAGES}"
+	jq -r '.\"'${package_name}'\".\"'${1}'\"' | if type == "array" then .[] else . end' "${PATH_DB_PACKAGES}"
 }
 
 print_desc_package_pac() {
@@ -237,7 +237,7 @@ pull_package() {
 						"VALIDATION $(test $(read_db_packages_pac PGPSIG) != 'null' && echo 'pgp' || echo 'sha256')"; do
 						print_desc_package_pac ${i}
 					done
-					jq -r -j '."'${package_name}'" | to_entries | .[] | select(.key | contains('$(sed 's/^/"/; s/ /","/g; s/$/"/' <<< ${keys_desc})')) | "%",(if .key == "ISIZE" then "SIZE" else .key end),"%\\n",.value,"\\n\\n" | if type == "array" then (.| join("\\n")) else . end' \
+					jq -r -j '.\"'${package_name}'\" | to_entries | .[] | select(.key | contains('$(sed 's/^/"/; s/ /","/g; s/$/"/' <<< ${keys_desc})')) | "%",(if .key == "ISIZE" then "SIZE" else .key end),"%\\n",.value,"\\n\\n" | if type == "array" then (.| join("\\n")) else . end' \
 						"${PATH_DB_PACKAGES}"
 				} >> "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/pacman/local/${package_desc}/desc"
 			)
@@ -481,7 +481,7 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 	# Additional.
 	pull_package ed
 	if [ ${TERMUX_PACKAGE_MANAGER} = "apt" ]; then
-		pull_package debianutils
+			pull_package debianutils
 	fi
 	pull_package dos2unix
 	pull_package inetutils
