@@ -24,7 +24,7 @@ TERMUX_PACKAGE_MANAGERS=("apt" "pacman")
 
 # The repository base urls mapping for package managers.
 declare -A REPO_BASE_URLS=(
-	["apt"]="https://mirror.accum.se/mirror/termux.dev/termux-main/"
+	["apt"]="http://mirror.mephi.ru/termux/termux-main/"
 	["pacman"]="https://service.termux-pacman.dev/main"
 )
 
