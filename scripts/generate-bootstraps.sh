@@ -282,7 +282,7 @@ add_termux_bootstrap_second_stage_files() {
 # Information about symlinks is stored in file SYMLINKS.txt.
 create_bootstrap_archive() {
 	echo "[*] Creating 'bootstrap-${1}.zip'..."
-	(cd "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}"
+	(cd "${BOOTSTRAP_ROOTFS}/data/data/com.termux/files/usr"
 		# Do not store symlinks in bootstrap archive.
 		# Instead, put all information to SYMLINKS.txt
 		while read -r -d '' link; do
