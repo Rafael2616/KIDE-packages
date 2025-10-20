@@ -172,24 +172,15 @@ pull_package() {
 					exit 1
 				fi
 
-				# Extract files.
-				# Corrigido: Mapeia todos os caminhos do com.termux para com.rafael.kide
-				tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS" \
-					--transform="s|^data/data/com.termux/files/usr|data/data/com.rafael.kide/files/usr|" \
-					--transform="s|^data/data/com.termux/files/home|data/data/com.rafael.kide/files/home|" \
-					--transform="s|^data/data/com.termux/files/var|data/data/com.rafael.kide/files/var|" \
-					--transform="s|^data/data/com.termux/files/etc|data/data/com.rafael.kide/files/etc|" \
-					--transform="s|^data/data/com.termux/files/tmp|data/data/com.rafael.kide/files/tmp|"
+				# Extract files directly to the correct location
+				# SEM transformações - extrai diretamente para a estrutura correta
+				echo "[*] Extracting data from $data_archive to $BOOTSTRAP_ROOTFS"
+				tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS"
 
 				if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
-					# Register extracted files.
-					# Corrigido: Atualiza os caminhos nos arquivos de lista
+					# Register extracted files - use actual extracted paths
+					echo "[*] Creating file list for $package_name"
 					tar tf "$data_archive" | \
-						sed "s|^data/data/com.termux/files/usr|data/data/com.rafael.kide/files/usr|" | \
-						sed "s|^data/data/com.termux/files/home|data/data/com.rafael.kide/files/home|" | \
-						sed "s|^data/data/com.termux/files/var|data/data/com.rafael.kide/files/var|" | \
-						sed "s|^data/data/com.termux/files/etc|data/data/com.rafael.kide/files/etc|" | \
-						sed "s|^data/data/com.termux/files/tmp|data/data/com.rafael.kide/files/tmp|" | \
 						sed -E -e 's@^\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
 
 					# Generate checksums (md5).
@@ -198,7 +189,7 @@ pull_package() {
 					local list_file
 					list_file="${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
 
-					# Lê a lista de arquivos que acabamos de criar e calcula o hash
+					# Calculate checksums for actual files
 					(cd "$BOOTSTRAP_ROOTFS" && \
 					grep -E '^/' "$list_file" | while read -r filepath; do
 						# Remove o / inicial para obter o caminho relativo
@@ -309,14 +300,15 @@ add_termux_bootstrap_second_stage_files() {
 # Information about symlinks is stored in file SYMLINKS.txt.
 create_bootstrap_archive() {
 	echo "[*] Creating 'bootstrap-${1}.zip'..."
-	(cd "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}"
+	(cd "${BOOTSTRAP_ROOTFS}"
 		# Do not store symlinks in bootstrap archive.
 		# Instead, put all information to SYMLINKS.txt
 		while read -r -d '' link; do
-			echo "$(readlink "$link")←${link}" >> SYMLINKS.txt
+			echo "$(readlink "$link")←${link}" >> "${TERMUX_PREFIX}/SYMLINKS.txt"
 			rm -f "$link"
 		done < <(find . -type l -print0)
 
+		# Create zip from the entire rootfs structure
 		zip -r9 "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./*
 	)
 
@@ -438,10 +430,27 @@ if [ -z "$REPO_BASE_URL" ]; then
 	exit 1
 fi
 
+# DEBUG: Show current paths
+echo "[DEBUG] TERMUX_PREFIX: $TERMUX_PREFIX"
+echo "[DEBUG] TERMUX__ROOTFS: $TERMUX__ROOTFS"
+echo "[DEBUG] BOOTSTRAP_TMPDIR: $BOOTSTRAP_TMPDIR"
+
 for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
+	echo "[*] Processing architecture: $package_arch"
+
 	PATH_DB_PACKAGES="$BOOTSTRAP_TMPDIR/main_${package_arch}.json"
 	BOOTSTRAP_ROOTFS="$BOOTSTRAP_TMPDIR/rootfs-${package_arch}"
 	BOOTSTRAP_PKGDIR="$BOOTSTRAP_TMPDIR/packages-${package_arch}"
+
+	echo "[DEBUG] BOOTSTRAP_ROOTFS: $BOOTSTRAP_ROOTFS"
+	echo "[DEBUG] Creating directory structure..."
+
+	# Create the complete directory structure for our package
+	mkdir -p "${BOOTSTRAP_ROOTFS}/data/data/com.rafael.kide/files/usr"
+	mkdir -p "${BOOTSTRAP_ROOTFS}/data/data/com.rafael.kide/files/home"
+	mkdir -p "${BOOTSTRAP_ROOTFS}/data/data/com.rafael.kide/files/var"
+	mkdir -p "${BOOTSTRAP_ROOTFS}/data/data/com.rafael.kide/files/tmp"
+	mkdir -p "${BOOTSTRAP_ROOTFS}/data/data/com.rafael.kide/files/etc"
 
 	# Create initial directories for $TERMUX_PREFIX
 	if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
