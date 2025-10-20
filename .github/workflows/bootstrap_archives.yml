@@ -1,85 +1,73 @@
-name: Generate bootstrap archives
+name: Generate bootstrap archives (android-7)
 
 on:
   push:
     branches:
       - master
-  workflow_dispatch:
+
+permissions: {} # none
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
   build:
+    permissions:
+      contents: read # actions/upload-artifact doesn't need contents: write
+    runs-on: ubuntu-latest
     strategy:
       matrix:
-        arch: [aarch64, arm, x86_64]
-      fail-fast: false
-    runs-on: ubuntu-latest
+        arch:
+          - aarch64
+          - arm
+          - x86_64
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential git jq zip unzip
-
-      - name: Set up Android SDK and NDK
-        env:
-          TERMUX_JAVA_HOME: ${{ env.JAVA_HOME }}
-        run: ./scripts/setup-android-sdk.sh
-
-      - name: Create bootstrap archive for ${{ matrix.arch }}
-        env:
-          TERMUX_ON_DEVICE_BUILD: "false"
+      - name: Git clone
+        uses: actions/checkout@v5
+      - name: Create bootstrap archive
         run: ./scripts/generate-bootstraps.sh --architectures ${{ matrix.arch }}
-
-      - name: Store bootstrap artifact
+      - name: Store artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: bootstrap-archive-${{ matrix.arch }}
-          # Caminho explícito para o arquivo gerado
-          path: "bootstrap-${{ matrix.arch }}.zip"
-
+          name: bootstrap-archives-${{ matrix.arch }}-${{ github.sha }}
+          path: "*.zip"
   publish:
+    permissions:
+      contents: write # for git push
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Git clone
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # Needed for git tag logic
-
-      - name: Download all bootstrap artifacts
-        uses: actions/download-artifact@v4
+          fetch-depth: 0
+      - name: Fetch bootstrap archives
+        uses: actions/download-artifact@v5
         with:
-          path: bootstrap_zips
-
-      - name: Create Release Tag
-        id: create_tag
+          merge-multiple: true
+          path: ./
+      - name: Create new tag
+        id: get_tag
         run: |
-          new_tag_prefix="bootstrap-$(date "+%Y.%m.%d")"
-          latest_rev=$(git tag -l "${new_tag_prefix}-r*" | sed -n 's/.*-r\([0-9]*\).*/\1/p' | sort -rn | head -n1)
-          if [ -z "$latest_rev" ]; then
-            rev=1
+          new_tag="bootstrap-$(date "+%Y.%m.%d")"
+          existing_tag_revision=$(git tag | grep "$new_tag" | sort -r | head -n 1 | cut -d- -f3 | cut -dr -f2)
+          if [ -n "$existing_tag_revision" ]; then
+            tag_rev=$((existing_tag_revision + 1))
           else
-            rev=$((latest_rev + 1))
+            tag_rev=1
           fi
-          new_tag="${new_tag_prefix}-r${rev}"
-          echo "tag_name=${new_tag}" >> $GITHUB_OUTPUT
-
-      - name: Publish Bootstrap Release
-        uses: softprops/action-gh-release@v2
+          new_tag="${new_tag}-r${tag_rev}+apt.android-7"
+          git tag "$new_tag"
+          git push --tags
+          echo "tag_name=$new_tag" >> $GITHUB_OUTPUT
+      - name: Publish bootstrap zips to GitHub release
+        uses: oftprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.create_tag.outputs.tag_name }}
-          name: "Bootstrap - ${{ steps.create_tag.outputs.tag_name }}"
-          body: "Automated build of bootstrap archives for all supported architectures."
-          files: bootstrap_zips/**/*.zip
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: "*.zip"
+          file_glob: true
+          release_name: "Bootstrap archives for Termux application (apt.android-7)"
+          tag: ${{ steps.get_tag.outputs.tag_name }}
+          checksums: sha256,sha512,md5
