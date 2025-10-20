@@ -39,14 +39,15 @@ jobs:
 
       - name: Create bootstrap archive for ${{ matrix.arch }}
         env:
-          TERMUX_ON_DEVICE_BUILD: "true"
+          TERMUX_ON_DEVICE_BUILD: "false"
         run: ./scripts/generate-bootstraps.sh --architectures ${{ matrix.arch }}
 
       - name: Store bootstrap artifact
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap-archive-${{ matrix.arch }}
-          path: "*.zip"
+          # Caminho explícito para o arquivo gerado
+          path: "bootstrap-${{ matrix.arch }}.zip"
 
   publish:
     needs: build
