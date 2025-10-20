@@ -63,11 +63,10 @@ jobs:
           git push --tags
           echo "tag_name=$new_tag" >> $GITHUB_OUTPUT
       - name: Publish bootstrap zips to GitHub release
-          new_tag="${new_tag}-r${tag_rev}+apt.android-7"
+        uses: softprops/action-gh-release@v2
           git tag "$new_tag"
           git push --tags
           echo "tag_name=$new_tag" >> $GITHUB_OUTPUT
-        uses: softprops/action-gh-release@v2
         with:
           file: "*.zip"
           file_glob: true
