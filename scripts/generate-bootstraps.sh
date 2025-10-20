@@ -172,41 +172,43 @@ pull_package() {
 					exit 1
 				fi
 
-     	# Extract files.
-     	# Precisamos remover o / inicial do $TERMUX_PREFIX para o caminho de destino do tar
-     	local TARGET_PREFIX
-     	TARGET_PREFIX=$(echo "$TERMUX_PREFIX" | sed 's|^/||')
+				# Extract files.
+				# Corrigido: Mapeia todos os caminhos do com.termux para com.rafael.kide
+				tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS" \
+					--transform="s|^data/data/com.termux/files/usr|data/data/com.rafael.kide/files/usr|" \
+					--transform="s|^data/data/com.termux/files/home|data/data/com.rafael.kide/files/home|" \
+					--transform="s|^data/data/com.termux/files/var|data/data/com.rafael.kide/files/var|" \
+					--transform="s|^data/data/com.termux/files/etc|data/data/com.rafael.kide/files/etc|" \
+					--transform="s|^data/data/com.termux/files/tmp|data/data/com.rafael.kide/files/tmp|"
 
-    	 # Extrai os arquivos, remapeando o prefixo antigo (com.termux) para o novo (com.rafael.kide)
-     	tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS" \
-          	--transform="s|^data/data/com.termux/files/usr|${TARGET_PREFIX}|"
+				if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
+					# Register extracted files.
+					# Corrigido: Atualiza os caminhos nos arquivos de lista
+					tar tf "$data_archive" | \
+						sed "s|^data/data/com.termux/files/usr|data/data/com.rafael.kide/files/usr|" | \
+						sed "s|^data/data/com.termux/files/home|data/data/com.rafael.kide/files/home|" | \
+						sed "s|^data/data/com.termux/files/var|data/data/com.rafael.kide/files/var|" | \
+						sed "s|^data/data/com.termux/files/etc|data/data/com.rafael.kide/files/etc|" | \
+						sed "s|^data/data/com.termux/files/tmp|data/data/com.rafael.kide/files/tmp|" | \
+						sed -E -e 's@^\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
 
-     	if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
-      	# Register extracted files.
-      	# Registra os caminhos já transformados
-      	tar tf "$data_archive" | \
-         	  sed "s|^data/data/com.termux/files/usr|${TERMUX_PREFIX}|" | \
-          	sed -E -e 's@^\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
+					# Generate checksums (md5).
+					rm -rf ./data
 
-      	# Generate checksums (md5).
-      	# Remove qualquer extração 'data' antiga que o script md5 original faria
-      	rm -rf ./data
+					local list_file
+					list_file="${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
 
-      	local list_file
-      	list_file="${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
-
-      	# Lê a lista de arquivos que acabamos de criar e calcula o hash
-      	# dos arquivos reais que foram extraídos para o BOOTSTRAP_ROOTFS
-      	(cd "$BOOTSTRAP_ROOTFS" && \
-       	grep -E '^/' "$list_file" | while read -r filepath; do
-         	# Remove o / inicial para obter o caminho relativo
-         	local rel_path
-         	rel_path=$(echo "$filepath" | sed 's|^/||')
-         	if [ -f "$rel_path" ]; then
-            	md5sum "$rel_path"
-         	fi
-       		done | sed 's@^\.$@@g' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.md5sums"
-      	)
+					# Lê a lista de arquivos que acabamos de criar e calcula o hash
+					(cd "$BOOTSTRAP_ROOTFS" && \
+					grep -E '^/' "$list_file" | while read -r filepath; do
+						# Remove o / inicial para obter o caminho relativo
+						local rel_path
+						rel_path=$(echo "$filepath" | sed 's|^/||')
+						if [ -f "$rel_path" ]; then
+							md5sum "$rel_path"
+						fi
+						done | sed 's@^\.$@@g' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.md5sums"
+					)
 
 					# Extract metadata.
 					tar xf "$control_archive"
