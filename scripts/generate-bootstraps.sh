@@ -173,7 +173,6 @@ pull_package() {
 				fi
 
 				# Extract files directly to the correct location
-				# SEM transformações - extrai diretamente para a estrutura correta
 				echo "[*] Extracting data from $data_archive to $BOOTSTRAP_ROOTFS"
 				tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS"
 
@@ -300,15 +299,23 @@ add_termux_bootstrap_second_stage_files() {
 # Information about symlinks is stored in file SYMLINKS.txt.
 create_bootstrap_archive() {
 	echo "[*] Creating 'bootstrap-${1}.zip'..."
+
+	# Create SYMLINKS.txt in a location that definitely exists
+	local symlinks_file="${BOOTSTRAP_ROOTFS}/SYMLINKS.txt"
+	touch "$symlinks_file"
+
 	(cd "${BOOTSTRAP_ROOTFS}"
 		# Do not store symlinks in bootstrap archive.
 		# Instead, put all information to SYMLINKS.txt
 		while read -r -d '' link; do
-			echo "$(readlink "$link")←${link}" >> "${TERMUX_PREFIX}/SYMLINKS.txt"
-			rm -f "$link"
-		done < <(find . -type l -print0)
+			if [ -n "$link" ] && [ -L "$link" ]; then
+				echo "$(readlink "$link")←${link}" >> "SYMLINKS.txt"
+				rm -f "$link"
+			fi
+		done < <(find . -type l -print0 2>/dev/null)
 
 		# Create zip from the entire rootfs structure
+		echo "[*] Creating zip archive..."
 		zip -r9 "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./*
 	)
 
@@ -444,6 +451,10 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 
 	echo "[DEBUG] BOOTSTRAP_ROOTFS: $BOOTSTRAP_ROOTFS"
 	echo "[DEBUG] Creating directory structure..."
+
+	# Clean and recreate the bootstrap rootfs
+	rm -rf "$BOOTSTRAP_ROOTFS"
+	mkdir -p "$BOOTSTRAP_ROOTFS"
 
 	# Create the complete directory structure for our package
 	mkdir -p "${BOOTSTRAP_ROOTFS}/data/data/com.rafael.kide/files/usr"
