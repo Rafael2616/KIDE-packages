@@ -172,15 +172,29 @@ pull_package() {
 					exit 1
 				fi
 
-				# Extract files directly to the correct location
-				echo "[*] Extracting data from $data_archive to $BOOTSTRAP_ROOTFS"
-				tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS"
+				# Extract files with comprehensive path transformations
+				echo "[*] Extracting and transforming paths for $package_name"
+				tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS" \
+					--transform="s|^\./||" \
+					--transform="s|^data/data/com\.termux/|data/data/com.rafael.kide/|" \
+					--transform="s|^data/data/com\.termux|data/data/com.rafael.kide|" \
+					--transform="s|^data/data/com\.termux|data/data/com.rafael.kide|" \
+					--transform="s|^com\.termux/|com.rafael.kide/|" \
+					--transform="flags=r;s|com\.termux|com.rafael.kide|g"
 
 				if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
-					# Register extracted files - use actual extracted paths
+					# Register extracted files with transformed paths
 					echo "[*] Creating file list for $package_name"
 					tar tf "$data_archive" | \
-						sed -E -e 's@^\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
+						sed -E \
+							-e 's|^\./||' \
+							-e 's|^data/data/com\.termux/|data/data/com.rafael.kide/|' \
+							-e 's|^data/data/com\.termux|data/data/com.rafael.kide|' \
+							-e 's|^data/data/com\.termux|data/data/com.rafael.kide|' \
+							-e 's|^com\.termux/|com.rafael.kide/|' \
+							-e 's|com\.termux|com.rafael.kide|g' \
+							-e 's@^([^/])@/@' \
+							-e 's@^/$@/.@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${package_name}.list"
 
 					# Generate checksums (md5).
 					rm -rf ./data
@@ -191,7 +205,6 @@ pull_package() {
 					# Calculate checksums for actual files
 					(cd "$BOOTSTRAP_ROOTFS" && \
 					grep -E '^/' "$list_file" | while read -r filepath; do
-						# Remove o / inicial para obter o caminho relativo
 						local rel_path
 						rel_path=$(echo "$filepath" | sed 's|^/||')
 						if [ -f "$rel_path" ]; then
@@ -294,33 +307,70 @@ add_termux_bootstrap_second_stage_files() {
 
 }
 
+fix_symlinks_file() {
+    local symlinks_file="${BOOTSTRAP_ROOTFS}/SYMLINKS.txt"
+
+    if [ -f "$symlinks_file" ]; then
+        echo "[*] Corrigindo SYMLINKS.txt..."
+
+        # Backup do arquivo original
+        cp "$symlinks_file" "${symlinks_file}.backup"
+
+        # Substitui todas as ocorrências de com.termux para com.rafael.kide
+        # Primeiro: caminhos completos
+        sed -i 's|/data/data/com\.termux/files/usr|/data/data/com.rafael.kide/files/usr|g' "$symlinks_file"
+        sed -i 's|/data/data/com\.termux/files/home|/data/data/com.rafael.kide/files/home|g' "$symlinks_file"
+        sed -i 's|/data/data/com\.termux/files/var|/data/data/com.rafael.kide/files/var|g' "$symlinks_file"
+        sed -i 's|/data/data/com\.termux/files/etc|/data/data/com.rafael.kide/files/etc|g' "$symlinks_file"
+        sed -i 's|/data/data/com\.termux/files/tmp|/data/data/com.rafael.kide/files/tmp|g' "$symlinks_file"
+
+        # Segundo: apenas o package name
+        sed -i 's|com\.termux|com.rafael.kide|g' "$symlinks_file"
+
+        # Terceiro: caminhos relativos que podem conter com.termux
+        sed -i 's|\./data/data/com\.termux|./data/data/com.rafael.kide|g' "$symlinks_file"
+
+        echo "[*] ✅ SYMLINKS.txt corrigido"
+        echo "[*] Backup salvo em: ${symlinks_file}.backup"
+    else
+        echo "[*] ⚠️  SYMLINKS.txt não encontrado, criando novo..."
+        touch "$symlinks_file"
+    fi
+}
+
 # Final stage: generate bootstrap archive and place it to current
 # working directory.
 # Information about symlinks is stored in file SYMLINKS.txt.
 create_bootstrap_archive() {
-	echo "[*] Creating 'bootstrap-${1}.zip'..."
+    echo "[*] Creating 'bootstrap-${1}.zip'..."
 
-	# Create SYMLINKS.txt in a location that definitely exists
-	local symlinks_file="${BOOTSTRAP_ROOTFS}/SYMLINKS.txt"
-	touch "$symlinks_file"
+    # CORREÇÃO: Corrige o arquivo SYMLINKS.txt antes de criar o zip
+    fix_symlinks_file
 
-	(cd "${BOOTSTRAP_ROOTFS}"
-		# Do not store symlinks in bootstrap archive.
-		# Instead, put all information to SYMLINKS.txt
-		while read -r -d '' link; do
-			if [ -n "$link" ] && [ -L "$link" ]; then
-				echo "$(readlink "$link")←${link}" >> "SYMLINKS.txt"
-				rm -f "$link"
-			fi
-		done < <(find . -type l -print0 2>/dev/null)
+    # Create SYMLINKS.txt in a location that definitely exists
+    local symlinks_file="${BOOTSTRAP_ROOTFS}/SYMLINKS.txt"
+    touch "$symlinks_file"
 
-		# Create zip from the entire rootfs structure
-		echo "[*] Creating zip archive..."
-		zip -r9 "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./*
-	)
+    (cd "${BOOTSTRAP_ROOTFS}"
+        # Do not store symlinks in bootstrap archive.
+        # Instead, put all information to SYMLINKS.txt
+        while read -r -d '' link; do
+            if [ -n "$link" ] && [ -L "$link" ]; then
+                echo "$(readlink "$link")←${link}" >> "SYMLINKS.txt"
+                rm -f "$link"
+            fi
+        done < <(find . -type l -print0 2>/dev/null)
 
-	mv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./
-	echo "[*] Finished successfully (${1})."
+        # Clean up any remaining com.termux directories
+        find . -name "*com.termux*" -type d -empty -delete 2>/dev/null || true
+
+        # Create zip from the entire rootfs structure
+        echo "[*] Creating zip archive..."
+        zip -r9 "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./*
+    )
+
+    mv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./
+    echo "[*] Finished successfully (${1})."
 }
 
 show_usage() {
@@ -499,7 +549,7 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 	fi
 
 	# Core utilities.
-	pull_package bash # Used by `termux-bootstrap-second-stage.sh`
+	pull_package bash
 	pull_package bzip2
 	if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
 		pull_package command-not-found
@@ -547,6 +597,9 @@ for package_arch in "${TERMUX_ARCHITECTURES[@]}"; do
 
 	# Add termux bootstrap second stage files
 	add_termux_bootstrap_second_stage_files "$package_arch"
+
+	# Clean up any empty com.termux directories that might remain
+	find "$BOOTSTRAP_ROOTFS" -name "*com.termux*" -type d -empty -delete 2>/dev/null || true
 
 	# Create bootstrap archive.
 	create_bootstrap_archive "$package_arch"
